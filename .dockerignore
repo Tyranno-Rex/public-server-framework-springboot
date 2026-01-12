@@ -1,0 +1,53 @@
+# Build outputs (exclude build dir but include JAR)
+build/*
+!build/libs/
+!build/libs/*.jar
+target/
+*.class
+*.war
+!gradle/wrapper/gradle-wrapper.jar
+
+# Gradle
+.gradle/
+gradle-app.setting
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.settings/
+.classpath
+.project
+.factorypath
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log
+logs/
+
+# Test reports
+test-results/
+coverage/
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# Documentation
+*.md
+!README.md
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
