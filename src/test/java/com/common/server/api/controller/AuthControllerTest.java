@@ -10,10 +10,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -26,9 +25,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * AuthController API 테스트
+ *
+ * @WebMvcTest를 사용하여 컨트롤러 슬라이스 테스트 수행
+ * - 실제 DB 연결 없이 컨트롤러 로직만 테스트
+ * - @MockitoBean으로 서비스 계층 모킹
  */
-@SpringBootTest
-@AutoConfigureMockMvc(addFilters = false)
+@WebMvcTest(controllers = AuthController.class)
 @DisplayName("AuthController API 테스트")
 class AuthControllerTest {
 
@@ -38,7 +40,7 @@ class AuthControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private AuthService authService;
 
     private LoginRequestDto loginRequest;
