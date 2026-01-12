@@ -1,5 +1,6 @@
 package com.common.server.config;
 
+import com.common.server.common.logging.LoggingInterceptor;
 import com.common.server.common.ratelimit.RateLimitInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
@@ -21,6 +22,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     private final CorsProperties corsProperties;
     private final RateLimitInterceptor rateLimitInterceptor;
+    private final LoggingInterceptor loggingInterceptor;
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
@@ -34,8 +36,15 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        // 로깅 인터셉터 (가장 먼저 실행)
+        registry.addInterceptor(loggingInterceptor)
+                .order(1)
+                .addPathPatterns("/api/**");
+
+        // Rate Limiting 인터셉터
         registry.addInterceptor(rateLimitInterceptor)
+                .order(2)
                 .addPathPatterns("/api/**")
-                .excludePathPatterns("/api/auth/health"); // Health check 제외
+                .excludePathPatterns("/api/auth/health", "/api/health/**");
     }
 } 
