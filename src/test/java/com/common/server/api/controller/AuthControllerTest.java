@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -26,12 +27,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * AuthController API 테스트
  *
- * @SpringBootTest + @AutoConfigureMockMvc를 사용하여 통합 테스트 수행
- * - H2 인메모리 DB 사용 (src/test/resources/application.properties)
- * - @MockitoBean으로 AuthService 모킹
+ * CI 환경에서 PostgreSQL + Redis를 사용하여 통합 테스트를 수행합니다.
+ * AuthService는 @MockitoBean으로 모킹합니다.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 @DisplayName("AuthController API 테스트")
 class AuthControllerTest {
 

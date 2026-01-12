@@ -78,9 +78,6 @@ dependencies {
 	testImplementation 'org.assertj:assertj-core'
 	testImplementation 'io.grpc:grpc-testing:1.62.2'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
-	// H2 인메모리 DB (테스트용)
-	testRuntimeOnly 'com.h2database:h2'
 }
 
 tasks.named('test') {
