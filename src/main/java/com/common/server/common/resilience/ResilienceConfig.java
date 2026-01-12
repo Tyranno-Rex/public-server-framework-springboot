@@ -91,10 +91,9 @@ public class ResilienceConfig {
         return RetryConfig.custom()
                 // 최대 재시도 횟수
                 .maxAttempts(3)
-                // 재시도 간격
-                .waitDuration(Duration.ofMillis(500))
-                // 지수 백오프 사용 (재시도 간격이 점점 증가)
-                .intervalFunction(attempt -> Duration.ofMillis(500 * (long) Math.pow(2, attempt - 1)).toMillis())
+                // 지수 백오프 사용 (재시도 간격이 점점 증가: 500ms, 1000ms, 2000ms...)
+                // Note: waitDuration과 intervalFunction은 동시에 사용 불가
+                .intervalFunction(attempt -> 500 * (long) Math.pow(2, attempt - 1))
                 // 재시도할 예외
                 .retryExceptions(IOException.class, TimeoutException.class)
                 // 재시도하지 않을 예외
