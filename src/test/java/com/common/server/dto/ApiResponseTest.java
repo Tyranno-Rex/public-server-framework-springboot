@@ -26,19 +26,20 @@ class ApiResponseTest {
     @DisplayName("success(data) - 데이터와 함께 성공 응답 생성")
     void success_withData() {
         // given
-        String data = "test data";
+        TestData data = new TestData("test", 123);
 
         // when
-        ApiResponse<String> response = ApiResponse.success(data);
+        ApiResponse<TestData> response = ApiResponse.success(data);
 
         // then
         assertThat(response.isSuccess()).isTrue();
         assertThat(response.getData()).isEqualTo(data);
+        assertThat(response.getData().name()).isEqualTo("test");
         assertThat(response.getCode()).isEqualTo("SUCCESS");
     }
 
     @Test
-    @DisplayName("success(message, data) - 메시지와 함께 성공 응답 생성")
+    @DisplayName("success(message, data) - 메시지와 데이터 함께 성공 응답 생성")
     void success_withMessageAndData() {
         // given
         Integer data = 42;
@@ -51,6 +52,22 @@ class ApiResponseTest {
         assertThat(response.isSuccess()).isTrue();
         assertThat(response.getData()).isEqualTo(data);
         assertThat(response.getMessage()).isEqualTo(message);
+    }
+
+    @Test
+    @DisplayName("success(message) - 메시지만 있는 성공 응답")
+    void success_withMessageOnly() {
+        // given
+        String message = "Custom message";
+
+        // when
+        ApiResponse<Void> response = ApiResponse.success(message);
+
+        // then
+        assertThat(response.isSuccess()).isTrue();
+        assertThat(response.getData()).isNull();
+        assertThat(response.getMessage()).isEqualTo(message);
+        assertThat(response.getCode()).isEqualTo("SUCCESS");
     }
 
     @Test
@@ -95,4 +112,7 @@ class ApiResponseTest {
         assertThat(response.isSuccess()).isTrue();
         assertThat(response.getCode()).isEqualTo("DELETED");
     }
+
+    // 테스트용 데이터 클래스
+    record TestData(String name, int value) {}
 }
