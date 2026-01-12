@@ -1,5 +1,7 @@
 package com.common.server.api.controller;
 
+import com.common.server.config.security.JwtAuthenticationFilter;
+import com.common.server.config.security.SecurityProperties;
 import com.common.server.core.service.interfaces.AuthService;
 import com.common.server.dto.auth.LoginRequestDto;
 import com.common.server.dto.auth.LoginResponseDto;
@@ -11,14 +13,19 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -29,10 +36,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @WebMvcTest를 사용하여 컨트롤러 슬라이스 테스트 수행
  * - 실제 DB 연결 없이 컨트롤러 로직만 테스트
  * - @MockitoBean으로 서비스 계층 모킹
+ * - 테스트용 Security 설정으로 인증 비활성화
  */
 @WebMvcTest(controllers = AuthController.class)
+@Import(AuthControllerTest.TestSecurityConfig.class)
 @DisplayName("AuthController API 테스트")
 class AuthControllerTest {
+
+    @Configuration
+    static class TestSecurityConfig {
+        @Bean
+        public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
+            http
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+            return http.build();
+        }
+    }
 
     @Autowired
     private MockMvc mockMvc;
@@ -42,6 +62,12 @@ class AuthControllerTest {
 
     @MockitoBean
     private AuthService authService;
+
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @MockitoBean
+    private SecurityProperties securityProperties;
 
     private LoginRequestDto loginRequest;
     private LoginResponseDto loginResponse;
@@ -70,7 +96,6 @@ class AuthControllerTest {
 
         // when & then
         mockMvc.perform(post("/api/auth/login")
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andDo(print())
@@ -91,7 +116,6 @@ class AuthControllerTest {
 
         // when & then
         mockMvc.perform(post("/api/auth/login")
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andDo(print())
@@ -113,7 +137,6 @@ class AuthControllerTest {
 
         // when & then
         mockMvc.perform(post("/api/auth/refresh")
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(refreshRequest)))
                 .andDo(print())
