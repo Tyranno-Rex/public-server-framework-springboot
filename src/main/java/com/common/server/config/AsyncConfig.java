@@ -1,5 +1,6 @@
 package com.common.server.config;
 
+import com.common.server.common.logging.MdcTaskDecorator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.context.annotation.Bean;
@@ -37,6 +38,7 @@ public class AsyncConfig implements AsyncConfigurer {
         executor.setQueueCapacity(100);         // 대기 큐 크기
         executor.setKeepAliveSeconds(60);       // 유휴 스레드 유지 시간
         executor.setThreadNamePrefix("Async-");
+        executor.setTaskDecorator(new MdcTaskDecorator()); // MDC 컨텍스트 전파
         executor.setWaitForTasksToCompleteOnShutdown(true);  // Graceful Shutdown
         executor.setAwaitTerminationSeconds(30);             // 최대 대기 시간
         executor.setRejectedExecutionHandler((r, e) -> {
@@ -56,6 +58,7 @@ public class AsyncConfig implements AsyncConfigurer {
         executor.setMaxPoolSize(20);
         executor.setQueueCapacity(200);
         executor.setThreadNamePrefix("Notification-");
+        executor.setTaskDecorator(new MdcTaskDecorator()); // MDC 컨텍스트 전파
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(60);
         executor.initialize();
@@ -72,6 +75,7 @@ public class AsyncConfig implements AsyncConfigurer {
         executor.setMaxPoolSize(10);
         executor.setQueueCapacity(50);
         executor.setThreadNamePrefix("Background-");
+        executor.setTaskDecorator(new MdcTaskDecorator()); // MDC 컨텍스트 전파
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(120);
         executor.initialize();

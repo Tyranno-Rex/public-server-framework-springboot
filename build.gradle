@@ -45,6 +45,10 @@ dependencies {
 	// Rate Limiting (Bucket4j)
 	implementation 'com.bucket4j:bucket4j-core:8.10.1'
 
+	// Resilience4j (Circuit Breaker, Retry, Rate Limiter)
+	implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.2.0'
+	implementation 'io.github.resilience4j:resilience4j-reactor:2.2.0'
+
 	// gRPC Core
 	implementation 'io.grpc:grpc-netty-shaded:1.62.2'
 	implementation 'io.grpc:grpc-protobuf:1.62.2'

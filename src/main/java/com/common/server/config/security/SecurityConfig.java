@@ -38,6 +38,8 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         log.info("=== Security Configuration ===");
         log.info("Swagger enabled: {}", securityProperties.getSwagger().isEnabled());
+        log.info("Debug expose errors: {}", securityProperties.getDebug().isExposeErrors());
+        log.info("HSTS enabled: {}", securityProperties.getHeaders().isHsts());
         log.info("==============================");
 
         http
@@ -52,6 +54,32 @@ public class SecurityConfig {
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
 
+            // 보안 헤더 설정
+            .headers(headers -> {
+                // X-Frame-Options
+                if (securityProperties.getHeaders().isFrameOptions()) {
+                    headers.frameOptions(frame -> frame.deny());
+                }
+
+                // X-Content-Type-Options
+                if (securityProperties.getHeaders().isContentTypeOptions()) {
+                    headers.contentTypeOptions(content -> {});
+                }
+
+                // X-XSS-Protection (최신 브라우저는 자체 XSS 필터 사용)
+                if (securityProperties.getHeaders().isXssProtection()) {
+                    headers.xssProtection(xss -> xss.disable());
+                }
+
+                // HSTS (HTTPS 환경에서만)
+                if (securityProperties.getHeaders().isHsts()) {
+                    headers.httpStrictTransportSecurity(hsts ->
+                        hsts.includeSubDomains(true)
+                            .maxAgeInSeconds(31536000) // 1년
+                    );
+                }
+            })
+
             // 엔드포인트별 인증 설정
             .authorizeHttpRequests(authz -> {
                 // 인증 없이 접근 가능한 경로
@@ -59,6 +87,7 @@ public class SecurityConfig {
                     .requestMatchers("/api/auth/register").permitAll()
                     .requestMatchers("/api/auth/refresh").permitAll()
                     .requestMatchers("/api/auth/health").permitAll()
+                    .requestMatchers("/api/health/**").permitAll()
                     .requestMatchers("/actuator/**").permitAll();
 
                 // Swagger: 환경 설정에 따라
