@@ -2,6 +2,7 @@
 .gradle/
 build/
 bin/
+out/
 
 # IDE
 .idea/
@@ -9,18 +10,36 @@ bin/
 *.ipr
 *.iws
 .vscode/
+*.swp
+*.swo
 
 # OS
 .DS_Store
 Thumbs.db
+Desktop.ini
 
 # Logs
 *.log
 logs/
 
-# Environment
+# Environment (never commit secrets)
 .env
-*.env.local
+.env.local
+.env.*.local
 
 # Test
 /target/
+test-output/
+
+# gRPC Generated
+src/main/java/com/common/server/grpc/generated/
+
+# Uploads
+uploads/
+
+# Coverage
+coverage/
+*.lcov
+
+# Docker
+docker-compose.override.yml
