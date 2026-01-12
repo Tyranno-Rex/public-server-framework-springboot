@@ -1,5 +1,6 @@
-package com.common.server.common.dto;
+package com.common.server.dto;
 
+import com.common.server.dto.common.ApiResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +18,7 @@ class ApiResponseTest {
         // then
         assertThat(response.isSuccess()).isTrue();
         assertThat(response.getData()).isNull();
-        assertThat(response.getError()).isNull();
+        assertThat(response.getCode()).isEqualTo("SUCCESS");
         assertThat(response.getTimestamp()).isNotNull();
     }
 
@@ -33,18 +34,18 @@ class ApiResponseTest {
         // then
         assertThat(response.isSuccess()).isTrue();
         assertThat(response.getData()).isEqualTo(data);
-        assertThat(response.getError()).isNull();
+        assertThat(response.getCode()).isEqualTo("SUCCESS");
     }
 
     @Test
-    @DisplayName("success(data, message) - 메시지와 함께 성공 응답 생성")
-    void success_withDataAndMessage() {
+    @DisplayName("success(message, data) - 메시지와 함께 성공 응답 생성")
+    void success_withMessageAndData() {
         // given
         Integer data = 42;
         String message = "Operation completed";
 
         // when
-        ApiResponse<Integer> response = ApiResponse.success(data, message);
+        ApiResponse<Integer> response = ApiResponse.success(message, data);
 
         // then
         assertThat(response.isSuccess()).isTrue();
@@ -65,44 +66,33 @@ class ApiResponseTest {
         // then
         assertThat(response.isSuccess()).isFalse();
         assertThat(response.getData()).isNull();
-        assertThat(response.getError()).isNotNull();
-        assertThat(response.getError().getCode()).isEqualTo(code);
-        assertThat(response.getError().getMessage()).isEqualTo(message);
+        assertThat(response.getCode()).isEqualTo(code);
+        assertThat(response.getMessage()).isEqualTo(message);
     }
 
     @Test
-    @DisplayName("error(code, message, details) - 상세 정보와 함께 에러 응답 생성")
-    void error_withDetails() {
+    @DisplayName("created(data) - 생성 성공 응답")
+    void created_withData() {
         // given
-        String code = "VALIDATION_ERROR";
-        String message = "Validation failed";
-        String details = "Field 'email' is invalid";
+        String data = "new resource";
 
         // when
-        ApiResponse<Object> response = ApiResponse.error(code, message, details);
+        ApiResponse<String> response = ApiResponse.created(data);
 
         // then
-        assertThat(response.isSuccess()).isFalse();
-        assertThat(response.getError().getCode()).isEqualTo(code);
-        assertThat(response.getError().getMessage()).isEqualTo(message);
-        assertThat(response.getError().getDetails()).isEqualTo(details);
+        assertThat(response.isSuccess()).isTrue();
+        assertThat(response.getCode()).isEqualTo("CREATED");
+        assertThat(response.getData()).isEqualTo(data);
     }
 
     @Test
-    @DisplayName("타임스탬프가 현재 시간 근처")
-    void timestamp_isRecent() {
-        // given
-        long before = System.currentTimeMillis();
-
+    @DisplayName("deleted() - 삭제 성공 응답")
+    void deleted() {
         // when
-        ApiResponse<Void> response = ApiResponse.success();
+        ApiResponse<Void> response = ApiResponse.deleted();
 
         // then
-        long after = System.currentTimeMillis();
-        long responseTime = response.getTimestamp().toInstant(
-                java.time.ZoneOffset.systemDefault().getRules().getOffset(response.getTimestamp())
-        ).toEpochMilli();
-
-        assertThat(responseTime).isBetween(before, after);
+        assertThat(response.isSuccess()).isTrue();
+        assertThat(response.getCode()).isEqualTo("DELETED");
     }
 }

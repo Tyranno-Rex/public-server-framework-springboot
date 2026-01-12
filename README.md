@@ -309,14 +309,79 @@ docker run -d \
   public-server-framework
 ```
 
-## Monitoring
+## Monitoring & Observability
+
+### Docker Compose Profiles
+
+```bash
+# 기본 인프라만 (PostgreSQL, Redis)
+docker-compose up -d
+
+# 모니터링 포함 (Prometheus, Grafana, Alertmanager)
+docker-compose --profile monitoring up -d
+
+# ELK 스택 포함 (Elasticsearch, Logstash, Kibana)
+docker-compose --profile elk up -d
+
+# 전체 스택
+docker-compose --profile full up -d
+```
+
+### 모니터링 UI 접속
+
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| **Grafana** | http://localhost:3000 | admin / admin |
+| **Prometheus** | http://localhost:9091 | - |
+| **Kibana** | http://localhost:5601 | - |
+| **Alertmanager** | http://localhost:9093 | - |
+
+### Prometheus Metrics
+
+Spring Boot Actuator + Micrometer를 통해 다음 메트릭을 수집합니다:
+
+- **HTTP 요청**: 요청 수, 응답 시간, 상태 코드별 분포
+- **JVM**: 힙 메모리, GC, 스레드
+- **HikariCP**: 커넥션 풀 상태
+- **Resilience4j**: Circuit Breaker 상태
+
+```bash
+# Prometheus 메트릭 엔드포인트
+curl http://localhost:8080/actuator/prometheus
+```
+
+### Grafana 대시보드
+
+사전 구성된 대시보드:
+- **Spring Boot Application**: JVM, HTTP, DB 커넥션 풀 모니터링
+- 추가 대시보드는 `docker/grafana/dashboards/`에 JSON으로 추가
+
+### ELK 스택 (로그 수집)
+
+프로덕션 환경에서 로그가 자동으로 Logstash → Elasticsearch로 전송됩니다.
+
+```bash
+# Kibana에서 인덱스 패턴 생성
+# Index pattern: server-logs-*
+# Time field: @timestamp
+```
+
+### 알림 설정
+
+`docker/alertmanager/alertmanager.yml`에서 알림 수신자 설정:
+- Slack
+- Email
+- PagerDuty
 
 ### Actuator Endpoints
+
 - `/actuator/health` - Health status
 - `/actuator/info` - Application info
 - `/actuator/metrics` - Metrics
+- `/actuator/prometheus` - Prometheus metrics
 
 ### Logging
+
 Logs include TraceId and SpanId for request tracing:
 ```
 2025-01-13 12:00:00 [traceId=abc123, spanId=def456] INFO ...

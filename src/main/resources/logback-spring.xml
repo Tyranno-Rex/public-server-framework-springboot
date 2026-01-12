@@ -5,6 +5,8 @@
     <!-- 프로퍼티 정의 -->
     <property name="LOG_PATH" value="${LOG_PATH:-./logs}"/>
     <property name="LOG_FILE" value="${LOG_FILE:-application}"/>
+    <property name="LOGSTASH_HOST" value="${LOGSTASH_HOST:-localhost}"/>
+    <property name="LOGSTASH_PORT" value="${LOGSTASH_PORT:-5000}"/>
 
     <!-- 콘솔 출력 패턴 (TraceId, SpanId 포함) -->
     <property name="CONSOLE_LOG_PATTERN"
@@ -58,12 +60,39 @@
         </rollingPolicy>
     </appender>
 
-    <!-- JSON 형식 Appender (ELK 스택 연동용) -->
+    <!-- Logstash Appender (ELK 스택 연동) -->
+    <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>${LOGSTASH_HOST}:${LOGSTASH_PORT}</destination>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdcKeyName>traceId</includeMdcKeyName>
+            <includeMdcKeyName>spanId</includeMdcKeyName>
+            <includeMdcKeyName>userId</includeMdcKeyName>
+            <customFields>{"application":"public-server-framework"}</customFields>
+        </encoder>
+        <connectionStrategy>
+            <roundRobin>
+                <connectionTTL>5 minutes</connectionTTL>
+            </roundRobin>
+        </connectionStrategy>
+        <reconnectionDelay>1 second</reconnectionDelay>
+        <writeBufferSize>16384</writeBufferSize>
+    </appender>
+
+    <!-- Async Logstash Appender (성능 최적화) -->
+    <appender name="ASYNC_LOGSTASH" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="LOGSTASH"/>
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+    </appender>
+
+    <!-- JSON 형식 파일 Appender (백업용) -->
     <appender name="JSON_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_PATH}/${LOG_FILE}-json.log</file>
-        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <pattern>{"timestamp":"%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ}","level":"%level","traceId":"%X{traceId:-}","spanId":"%X{spanId:-}","userId":"%X{userId:-}","thread":"%thread","logger":"%logger","message":"%msg"}%n</pattern>
-            <charset>UTF-8</charset>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdcKeyName>traceId</includeMdcKeyName>
+            <includeMdcKeyName>spanId</includeMdcKeyName>
+            <includeMdcKeyName>userId</includeMdcKeyName>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>${LOG_PATH}/${LOG_FILE}-json.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
@@ -97,7 +126,7 @@
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="FILE"/>
             <appender-ref ref="ERROR_FILE"/>
-            <appender-ref ref="JSON_FILE"/>
+            <appender-ref ref="ASYNC_LOGSTASH"/>
         </root>
         <logger name="com.common.server" level="INFO"/>
         <logger name="org.springframework.security" level="WARN"/>
