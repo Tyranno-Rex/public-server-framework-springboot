@@ -45,6 +45,15 @@ public class PageResponseDto<T> {
     /** 마지막 페이지 여부 */
     private boolean last;
 
+    /** 빈 페이지 여부 */
+    private boolean empty;
+
+    /** 다음 페이지 존재 여부 */
+    private boolean hasNext;
+
+    /** 이전 페이지 존재 여부 */
+    private boolean hasPrevious;
+
     /**
      * Spring Data의 Page 객체를 PageResponseDto로 변환
      *
@@ -61,6 +70,9 @@ public class PageResponseDto<T> {
                 .totalPages(page.getTotalPages())
                 .first(page.isFirst())
                 .last(page.isLast())
+                .empty(page.isEmpty())
+                .hasNext(page.hasNext())
+                .hasPrevious(page.hasPrevious())
                 .build();
     }
 }
