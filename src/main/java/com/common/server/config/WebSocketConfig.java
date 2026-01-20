@@ -32,6 +32,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final WebSocketAuthInterceptor webSocketAuthInterceptor;
+    private final CorsProperties corsProperties;
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
@@ -51,16 +52,19 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // WebSocket 연결 엔드포인트
+        String[] allowedOrigins = corsProperties.getAllowedOrigins().toArray(new String[0]);
+
+        // WebSocket 연결 엔드포인트 - CORS 설정 적용
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*")
+                .setAllowedOriginPatterns(allowedOrigins)
                 .withSockJS(); // SockJS 폴백 지원
 
-        // SockJS 없는 순수 WebSocket 엔드포인트
+        // SockJS 없는 순수 WebSocket 엔드포인트 - CORS 설정 적용
         registry.addEndpoint("/ws-native")
-                .setAllowedOriginPatterns("*");
+                .setAllowedOriginPatterns(allowedOrigins);
 
-        log.info("WebSocket STOMP endpoints registered: /ws, /ws-native");
+        log.info("WebSocket STOMP endpoints registered: /ws, /ws-native with allowed origins: {}",
+                corsProperties.getAllowedOrigins());
     }
 
     @Override

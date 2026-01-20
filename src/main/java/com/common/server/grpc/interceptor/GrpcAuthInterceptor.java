@@ -6,12 +6,19 @@ import net.devh.boot.grpc.server.interceptor.GrpcGlobalServerInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
+
+import java.util.Arrays;
 
 /**
  * gRPC 인증 인터셉터
  *
  * JWT 토큰을 검증하고 사용자 정보를 Context에 저장
  * 환경 설정(grpc.auth.skip)에 따라 인증 스킵 가능
+ *
+ * <p><strong>보안 주의사항:</strong>
+ * grpc.auth.skip=true 설정은 dev, local 프로파일에서만 허용됩니다.
+ * 프로덕션 환경에서는 이 설정이 무시됩니다.</p>
  *
  * @author DDIP Team
  * @since 2025-01-13
@@ -20,6 +27,9 @@ import org.springframework.beans.factory.annotation.Value;
 public class GrpcAuthInterceptor implements ServerInterceptor {
 
     private static final Logger log = LoggerFactory.getLogger(GrpcAuthInterceptor.class);
+
+    // 인증 스킵이 허용되는 프로파일
+    private static final String[] AUTH_SKIP_ALLOWED_PROFILES = {"dev", "local", "test"};
 
     // Metadata 키 정의
     public static final Metadata.Key<String> AUTHORIZATION_KEY =
@@ -30,16 +40,48 @@ public class GrpcAuthInterceptor implements ServerInterceptor {
 
     // 인증이 필요없는 메서드 목록
     private static final String[] PUBLIC_METHODS = {
-        // 필요시 public 메서드 추가
+        "grpc.health.v1.Health",  // gRPC 헬스체크
+        "grpc.reflection.v1alpha.ServerReflection",  // gRPC 리플렉션
     };
 
     private final JwtService jwtService;
+    private final Environment environment;
+    private final boolean skipAuthAllowed;
 
     @Value("${grpc.auth.skip:false}")
     private boolean skipAuth;
 
-    public GrpcAuthInterceptor(JwtService jwtService) {
+    public GrpcAuthInterceptor(JwtService jwtService, Environment environment) {
         this.jwtService = jwtService;
+        this.environment = environment;
+        this.skipAuthAllowed = isAuthSkipAllowedProfile();
+
+        if (skipAuthAllowed) {
+            log.info("gRPC auth skip is ALLOWED in current profile(s): {}",
+                    Arrays.toString(environment.getActiveProfiles()));
+        } else {
+            log.info("gRPC auth skip is DISABLED - production mode");
+        }
+    }
+
+    /**
+     * 현재 프로파일이 인증 스킵이 허용되는 프로파일인지 확인
+     */
+    private boolean isAuthSkipAllowedProfile() {
+        String[] activeProfiles = environment.getActiveProfiles();
+        if (activeProfiles.length == 0) {
+            // 프로파일이 없으면 기본적으로 보안 모드 (스킵 불가)
+            return false;
+        }
+
+        for (String activeProfile : activeProfiles) {
+            for (String allowedProfile : AUTH_SKIP_ALLOWED_PROFILES) {
+                if (activeProfile.equalsIgnoreCase(allowedProfile)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override
@@ -56,11 +98,13 @@ public class GrpcAuthInterceptor implements ServerInterceptor {
             return next.startCall(call, headers);
         }
 
-        // 개발 환경에서 인증 스킵 설정 확인
-        if (skipAuth) {
-            log.debug("Auth skipped for development (grpc.auth.skip=true)");
+        // 개발 환경에서 인증 스킵 설정 확인 (프로파일 검증 포함)
+        if (skipAuth && skipAuthAllowed) {
+            log.debug("Auth skipped for development (grpc.auth.skip=true, profile allowed)");
             Context context = Context.current().withValue(USER_ID_KEY, "dev-user");
             return Contexts.interceptCall(context, call, headers, next);
+        } else if (skipAuth && !skipAuthAllowed) {
+            log.warn("grpc.auth.skip=true is configured but IGNORED in production profile!");
         }
 
         // Authorization 헤더에서 토큰 추출

@@ -69,7 +69,7 @@ public class LocalFileStorageService implements FileStorageService {
     @Override
     public byte[] download(String filePath) {
         try {
-            Path path = Paths.get(uploadPath, filePath);
+            Path path = resolveSafePath(filePath);
             return Files.readAllBytes(path);
         } catch (IOException e) {
             log.error("Failed to download file: {}", filePath, e);
@@ -80,7 +80,7 @@ public class LocalFileStorageService implements FileStorageService {
     @Override
     public boolean delete(String filePath) {
         try {
-            Path path = Paths.get(uploadPath, filePath);
+            Path path = resolveSafePath(filePath);
             boolean deleted = Files.deleteIfExists(path);
             if (deleted) {
                 log.info("File deleted: {}", filePath);
@@ -94,8 +94,42 @@ public class LocalFileStorageService implements FileStorageService {
 
     @Override
     public boolean exists(String filePath) {
-        Path path = Paths.get(uploadPath, filePath);
-        return Files.exists(path);
+        try {
+            Path path = resolveSafePath(filePath);
+            return Files.exists(path);
+        } catch (SecurityException e) {
+            log.warn("Invalid file path attempted: {}", filePath);
+            return false;
+        }
+    }
+
+    /**
+     * Path Traversal 공격 방지를 위한 안전한 경로 검증
+     *
+     * ../나 ..\ 같은 시퀀스를 사용한 디렉토리 탈출 공격을 방지합니다.
+     *
+     * @param filePath 검증할 파일 경로
+     * @return 검증된 안전한 Path
+     * @throws SecurityException 경로가 업로드 디렉토리 외부를 가리키는 경우
+     */
+    private Path resolveSafePath(String filePath) {
+        try {
+            Path basePath = Paths.get(uploadPath).toAbsolutePath().normalize();
+            Path resolvedPath = basePath.resolve(filePath).toAbsolutePath().normalize();
+
+            // 경로가 기본 디렉토리 내에 있는지 확인
+            if (!resolvedPath.startsWith(basePath)) {
+                log.warn("Path traversal attempt detected: {} (resolved to: {})", filePath, resolvedPath);
+                throw new SecurityException("Invalid file path: path traversal detected");
+            }
+
+            return resolvedPath;
+        } catch (SecurityException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Failed to resolve path: {}", filePath, e);
+            throw new SecurityException("Invalid file path", e);
+        }
     }
 
     @Override
